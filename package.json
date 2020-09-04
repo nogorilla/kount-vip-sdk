@@ -1,0 +1,23 @@
+{
+  "name": "kount-vip-sdk",
+  "version": "0.0.1",
+  "description": "SDK for working with Kount VIP API",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nogorilla/kount-vip-sdk.git"
+  },
+  "author": "gabriel.smith01@gmail.com",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nogorilla/kount-vip-sdk/issues"
+  },
+  "homepage": "https://github.com/nogorilla/kount-vip-sdk#readme",
+  "devDependencies": {
+    "eslint": "^7.8.1"
+  },
+  "dependencies": {}
+}
