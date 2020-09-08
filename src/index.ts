@@ -119,12 +119,23 @@ class NaraSDK {
 
   }
 
-  addEmail(email: Email, action: string): number {
+  /**
+   * Add an email address for bulk editing
+   * @param {string} email - Email address to execute against
+   * @param {string} action - Key values: A|R|D|X for setting status to approve, review, decline, or delete.
+   */
+  addEmail(address: string, action: string): number {
+    let email: Email = { address: address };
     email.action = (<any>EmailActions)[action];
     return this.emails.push(email);
   }
 
+  /**
+   * Submit emails for bulk actions.
+   */
   async submitEmails() {
+    if (this.emails.length <= 0) return false;
+
     let data = new FormData();
     this.emails.forEach(e => data.append(`email[${e.address}]`, `${e.action}`));
     return this._request('post', 'email', data);
