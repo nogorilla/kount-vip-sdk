@@ -1,11 +1,21 @@
 const axios = require('axios');
+const qs = require('querystring');
+const util = require('util');
 
-const baseUrl = 'https://api.kount.net/rpc/v1/vip/';
+
 const nl = '\n';
 
 function pluck<T, K extends keyof T>(o: T, propertyNames: K[]): T[K][] {
   return propertyNames.map((n) => o[n]);
 }
+
+interface Axios {
+  method: string,
+  url: string,
+  headers: object,
+  data?: string
+}
+
 
 interface Address {
   line1: string,
@@ -17,12 +27,14 @@ interface Address {
   type?: string
 }
 
-interface Axios {
-  method: string,
-  url: string,
-  responseType: string,
-  headers: object,
-  data?: string
+interface Card {
+  number: string,
+  action: string
+}
+
+interface Device {
+  id: string,
+  action: string
 }
 
 interface Email {
@@ -30,7 +42,8 @@ interface Email {
   action?: string
 }
 
-enum EmailActions {
+
+enum Actions {
   approve = 'A',
   decline = 'D',
   delete  = 'X',
@@ -48,24 +61,29 @@ enum AddressTypes {
   review_shipping  = 'r_sa[]'
 }
 
-
-// Expose NaraSDK
-class NaraSDK {
-
+class KountVip {
   apiKey: string;
+  baseUrl: string;
+
   addresses: Array<Address>;
+  cards: Array<Card>;
+  devices: Array<Device>;
   emails: Array<Email>;
+
 
   /**
    * @param {string} apiKey
    * @constructor
    */
-  constructor(apiKey: string) {
+  constructor(apiKey: string, test: boolean = false) {
     if (!apiKey) throw new Error('Kount API Key Missing.');
+    this.baseUrl = (test === true) ? 'https://api.test.kount.net/rpc/v1/vip/' : 'https://api.kount.net/rpc/v1/vip/';
 
     // Grab info out of config
     this.apiKey = apiKey;
     this.addresses = [];
+    this.cards = [];
+    this.devices = [];
     this.emails = [];
   }
 
@@ -116,17 +134,34 @@ class NaraSDK {
   }
 
   async submitAddresses() {
+    if (this.addresses.length <= 0) return false;
 
+    let data: {[k: string]:any} = {};
+    this.addresses.forEach(address => {
+      let addressLine = address.line2 !== undefined ? `${address.line1}|${address.line2}` : address.line1;
+      const country = address.country || 'US'
+      data[`${address.type}`] = `${addressLine}|${address.city}|${address.state}|${address.zipCode}|${country}`
+    });
+
+    try {
+      let results = await this._request('post', 'address', qs.stringify(data));
+      this.addresses = [];
+      return results;
+    } catch (e) {
+      if (e.response.status === 401) throw new Error('API Key is unauthorized');
+      throw e;
+    }
   }
 
   /**
    * Add an email address for bulk editing
    * @param {string} email - Email address to execute against
-   * @param {string} action - Key values: A|R|D|X for setting status to approve, review, decline, or delete.
+   * @param {string} action - Action to approve, review, decline, or delete.
    */
   addEmail(address: string, action: string): number {
-    let email: Email = { address: address };
-    email.action = (<any>EmailActions)[action];
+    const emailAction = (<any>Actions)[action];
+    if (emailAction === undefined) throw new Error("Invalid action: only 'approve', 'review', 'decline', or 'delete' allowed.");
+    let email: Email = { address, action: emailAction };
     return this.emails.push(email);
   }
 
@@ -136,10 +171,66 @@ class NaraSDK {
   async submitEmails() {
     if (this.emails.length <= 0) return false;
 
-    let data = new FormData();
-    this.emails.forEach(e => data.append(`email[${e.address}]`, `${e.action}`));
-    return this._request('post', 'email', data);
+    let data: {[k: string]:any} = {};
+    this.emails.forEach(e => data[`email[${e.address}]`] = e.action);
+    try {
+      let results = await this._request('post', 'email', qs.stringify(data));
+      this.emails = [];
+      return results;
+    } catch (e) {
+      if (e.response.status === 401) throw new Error('API Key is unauthorized');
+
+      throw e;
+    }
   }
+
+  addCard(number: string, action: string): number {
+    const cardAction = (<any>Actions)[action];
+    if (cardAction === undefined) throw new Error("Invalid action: only 'approve', 'review', 'decline', or 'delete' allowed.");
+    let card: Card = { number, action: cardAction };
+    return this.cards.push(card);
+  }
+
+  async submitCards() {
+    if (this.cards.length <= 0) return false;
+
+    let data: {[k: string]:any} = {};
+    this.cards.forEach(c => data[`ptok[${c.number}]`] = c.action);
+    try {
+      let results = await this._request('post', 'card', qs.stringify(data));
+      this.cards = [];
+      return results;
+    } catch (e) {
+      if (e.response.status === 401) throw new Error('API Key is unauthorized');
+
+      throw e;
+    }
+  }
+
+
+  adddevice(id: string, action: string): number {
+    const deviceAction = (<any>Actions)[action];
+    if (deviceAction === undefined) throw new Error("Invalid action: only 'approve', 'review', 'decline', or 'delete' allowed.");
+    let device: Device = { id, action: deviceAction };
+    return this.devices.push(device);
+  }
+
+  async submitDevices() {
+    if (this.devices.length <= 0) return false;
+
+    let data: {[k: string]:any} = {};
+    this.devices.forEach(d => data[`device_id[${d.id}]`] = d.action);
+    try {
+      let results = await this._request('post', 'card', qs.stringify(data));
+      this.devices = [];
+      return results;
+    } catch (e) {
+      if (e.response.status === 401) throw new Error('API Key is unauthorized');
+
+      throw e;
+    }
+  }
+
 
 
   /**
@@ -151,7 +242,7 @@ class NaraSDK {
    */
   async _request(method: string, path: string, body: any) {
     // Build url
-    let url = `${ baseUrl }${ path }.json`;
+    let url = `${ this.baseUrl }${ path }.json`;
 
     if (method === 'get') url += `?${body}`;
 
@@ -159,9 +250,8 @@ class NaraSDK {
     const config: Axios = {
       method,
       url,
-      responseType: 'json',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
         'x-kount-api-key': this.apiKey
       }
     };
@@ -173,6 +263,6 @@ class NaraSDK {
   }
 }
 
-module.exports = NaraSDK;
+module.exports = KountVip;
 
 
