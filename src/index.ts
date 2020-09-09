@@ -189,6 +189,7 @@ class KountVip {
   }
 
   addDevice(id: string, action: string): number {
+    if (id.length !== 32) throw new Error('Invalid Device ID.');
     const deviceAction = (<any>Actions)[action];
     if (deviceAction === undefined) throw new Error("Invalid action: only 'approve', 'review', 'decline', or 'delete' allowed.");
     let device: Device = { id, action: deviceAction };
@@ -201,7 +202,7 @@ class KountVip {
     let data: {[k: string]:any} = {};
     this.devices.forEach(d => data[`device_id[${d.id}]`] = d.action);
     try {
-      let results = await this._request('post', 'card', qs.stringify(data));
+      let results = await this._request('post', 'device', qs.stringify(data));
       this.devices = [];
       return results;
     } catch (e) {
