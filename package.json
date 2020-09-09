@@ -1,11 +1,12 @@
 {
   "name": "kount-vip-sdk",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "SDK for working with Kount VIP API",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "rimraf ./dist && tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "npm run build"
   },
   "repository": {
     "type": "git",
