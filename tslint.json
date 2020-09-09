@@ -3,7 +3,11 @@
     "extends": "tslint-config-airbnb",
     "jsRules": {},
     "rules": {
-        "eofline": false
+        "eofline": false,
+        "no-unused-variable": true,
+        "type-literal-delimiter": true,
+        "max-line-length": [true, 120],
+        "prefer-array-literal": [true, { "allow-type-parameters": true }]
     },
     "rulesDirectory": []
 }

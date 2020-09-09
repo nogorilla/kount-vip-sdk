@@ -1,54 +1,44 @@
 const axios = require('axios');
 const qs = require('querystring');
-const util = require('util');
-
-
-const nl = '\n';
-
-function pluck<T, K extends keyof T>(o: T, propertyNames: K[]): T[K][] {
-  return propertyNames.map((n) => o[n]);
-}
 
 interface Axios {
-  method: string,
-  url: string,
-  headers: object,
-  data?: string
+  method: string;
+  url: string;
+  headers: object;
+  data?: string;
 }
 
-
 interface Address {
-  line1: string,
-  line2: string,
-  city: string,
-  state: string,
-  zipCode: string,
-  country?: string,
-  type?: string
+  line1: string;
+  line2: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country?: string;
+  type?: string;
 }
 
 interface Device {
-  id: string,
-  action: string
+  id: string;
+  action: string;
 }
 
 interface Email {
-  address: string,
-  action?: string
+  address: string;
+  action?: string;
 }
 
 interface Payment {
-  token: string,
-  action: string,
-  type: string
+  token: string;
+  action: string;
+  type: string;
 }
-
 
 enum Actions {
   approve = 'A',
   decline = 'D',
   delete  = 'X',
-  review  = 'R'
+  review  = 'R',
 }
 
 enum AddressTypes {
@@ -59,7 +49,7 @@ enum AddressTypes {
   delete_billing   = 'x_ba[]',
   delete_shipping  = 'x_sa[]',
   review_billing   = 'r_ba[]',
-  review_shipping  = 'r_sa[]'
+  review_shipping  = 'r_sa[]',
 }
 
 enum PaymentTypes {
@@ -77,7 +67,7 @@ enum PaymentTypes {
   single_euro_payments_area = 'SEPA',
   skrill_moneybookers       = 'SKRILL',
   sofort                    = 'SOFORT',
-  token                     = 'TOKEN'
+  token                     = 'TOKEN',
 }
 
 class KountVip {
@@ -89,14 +79,13 @@ class KountVip {
   devices: Array<Device>;
   emails: Array<Email>;
 
-
   /**
    * @param {string} apiKey
    * @constructor
    */
   constructor(apiKey: string, test: boolean = false) {
     if (!apiKey) throw new Error('Kount API Key Missing.');
-    this.baseUrl = (test === true) ? 'https://api.test.kount.net/rpc/v1/vip/' : 'https://api.kount.net/rpc/v1/vip/';
+    this.baseUrl = (test) ? 'https://api.test.kount.net/rpc/v1/vip/' : 'https://api.kount.net/rpc/v1/vip/';
 
     // Grab info out of config
     this.apiKey = apiKey;
@@ -115,15 +104,15 @@ class KountVip {
     if (this.addresses.length <= 0) return false;
 
     let data: string = '';
-    this.addresses.forEach(address => {
-      let addressLine = address.line2 !== undefined ? `${address.line1}\n${address.line2}` : address.line1;
-      const country = address.country || 'US'
+    this.addresses.forEach((address) => {
+      const addressLine = address.line2 !== undefined ? `${address.line1}\n${address.line2}` : address.line1;
+      const country = address.country || 'US';
       const formated = encodeURIComponent(`${addressLine}\n${address.city}\n${address.state}\n${address.zipCode}\n${country}`);
       data += `${address.type}=${formated}`;
     });
 
     try {
-      let results = await this._request('post', 'address', data);
+      const results = await this.request('post', 'address', data);
       this.addresses = [];
       return results;
     } catch (e) {
@@ -140,7 +129,7 @@ class KountVip {
   addEmail(address: string, action: string): number {
     const emailAction = (<any>Actions)[action];
     if (emailAction === undefined) throw new Error("Invalid action: only 'approve', 'review', 'decline', or 'delete' allowed.");
-    let email: Email = { address, action: emailAction };
+    const email: Email = { address, action: emailAction };
     return this.emails.push(email);
   }
 
@@ -150,10 +139,10 @@ class KountVip {
   async submitEmails(): Promise<any> {
     if (this.emails.length <= 0) return false;
 
-    let data: {[k: string]:any} = {};
+    const data: {[k: string]:any} = {};
     this.emails.forEach(e => data[`email[${e.address}]`] = e.action);
     try {
-      let results = await this._request('post', 'email', qs.stringify(data));
+      const results = await this.request('post', 'email', qs.stringify(data));
       this.emails = [];
       return results;
     } catch (e) {
@@ -167,18 +156,18 @@ class KountVip {
     const paymentAction = (<any>Actions)[action];
     const paymentType = (<any>PaymentTypes)[type];
     if (paymentAction === undefined) throw new Error("Invalid action: only 'approve', 'review', 'decline', or 'delete' allowed.");
-    if (paymentType === undefined) throw new Error("Invalid payment type.")
-    let payment: Payment = { token, type: paymentType, action: paymentAction };
+    if (paymentType === undefined) throw new Error('Invalid payment type.');
+    const payment: Payment = { token, type: paymentType, action: paymentAction };
     return this.payments.push(payment);
   }
 
   async submitPayments(): Promise<any> {
     if (this.payments.length <= 0) return false;
 
-    let data: {[k: string]:any} = {};
+    const data: {[k: string]:any} = {};
     this.payments.forEach(p => data[`${p.action.toLowerCase()}_payment[${p.type}][]`] = p.token);
     try {
-      let results = await this._request('post', 'payment', qs.stringify(data));
+      const results = await this.request('post', 'payment', qs.stringify(data));
       this.payments = [];
       return results;
     } catch (e) {
@@ -192,17 +181,17 @@ class KountVip {
     if (id.length !== 32) throw new Error('Invalid Device ID.');
     const deviceAction = (<any>Actions)[action];
     if (deviceAction === undefined) throw new Error("Invalid action: only 'approve', 'review', 'decline', or 'delete' allowed.");
-    let device: Device = { id, action: deviceAction };
+    const device: Device = { id, action: deviceAction };
     return this.devices.push(device);
   }
 
   async submitDevices(): Promise<any> {
     if (this.devices.length <= 0) return false;
 
-    let data: {[k: string]:any} = {};
+    const data: {[k: string]:any} = {};
     this.devices.forEach(d => data[`device_id[${d.id}]`] = d.action);
     try {
-      let results = await this._request('post', 'device', qs.stringify(data));
+      const results = await this.request('post', 'device', qs.stringify(data));
       this.devices = [];
       return results;
     } catch (e) {
@@ -219,7 +208,7 @@ class KountVip {
    * @param {string} [body]
    * @returns {Promise}
    */
-  async _request(method: string, path: string, body: any) {
+  private async request(method: string, path: string, body: any) {
     // Build url
     let url = `${ this.baseUrl }${ path }.json`;
 
@@ -231,8 +220,8 @@ class KountVip {
       url,
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'x-kount-api-key': this.apiKey
-      }
+        'x-kount-api-key': this.apiKey,
+      },
     };
 
     if ((method === 'post' || method === 'put') && body) config.data = body;
@@ -243,5 +232,3 @@ class KountVip {
 }
 
 module.exports = KountVip;
-
-
