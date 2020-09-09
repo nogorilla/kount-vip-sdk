@@ -62,7 +62,7 @@ enum AddressTypes {
   review_shipping  = 'r_sa[]'
 }
 
-enum PaymetTypes {
+enum PaymentTypes {
   apple_pay                 = 'APAY',
   bpay                      = 'BPAY',
   carte_bleue               = 'CARTE_BLEUE',
@@ -165,18 +165,18 @@ class KountVip {
 
   addPayment(token: string, type: string, action: string): number {
     const paymentAction = (<any>Actions)[action];
-    const paymentType = (<any>PaymetTypes)[type];
+    const paymentType = (<any>PaymentTypes)[type];
     if (paymentAction === undefined) throw new Error("Invalid action: only 'approve', 'review', 'decline', or 'delete' allowed.");
     if (paymentType === undefined) throw new Error("Invalid payment type.")
-    let payment: Payment = { token, type, action: paymentAction };
+    let payment: Payment = { token, type: paymentType, action: paymentAction };
     return this.payments.push(payment);
   }
 
-  async submitPaymentss(): Promise<any> {
+  async submitPayments(): Promise<any> {
     if (this.payments.length <= 0) return false;
 
     let data: {[k: string]:any} = {};
-    this.payments.forEach(p => data[`${p.action.toLowerCase}_payment[${p.type}][]`] = p.token);
+    this.payments.forEach(p => data[`${p.action.toLowerCase()}_payment[${p.type}][]`] = p.token);
     try {
       let results = await this._request('post', 'payment', qs.stringify(data));
       this.payments = [];
