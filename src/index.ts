@@ -27,11 +27,6 @@ interface Address {
   type?: string
 }
 
-interface Card {
-  number: string,
-  action: string
-}
-
 interface Device {
   id: string,
   action: string
@@ -40,6 +35,12 @@ interface Device {
 interface Email {
   address: string,
   action?: string
+}
+
+interface Payment {
+  token: string,
+  action: string,
+  type: string
 }
 
 
@@ -61,12 +62,30 @@ enum AddressTypes {
   review_shipping  = 'r_sa[]'
 }
 
+enum PaymetTypes {
+  apple_pay                 = 'APAY',
+  bpay                      = 'BPAY',
+  carte_bleue               = 'CARTE_BLEUE',
+  check                     = 'CHEK',
+  elv                       = 'ELV',
+  giropay                   = 'GIROPAY',
+  interac                   = 'INTERAC',
+  mercado_pago              = 'MERCADO_PAGO',
+  neteller                  = 'NETELLER',
+  poli                      = 'POLI',
+  paypal                    = 'PYPL',
+  single_euro_payments_area = 'SEPA',
+  skrill_moneybookers       = 'SKRILL',
+  sofort                    = 'SOFORT',
+  token                     = 'TOKEN'
+}
+
 class KountVip {
   apiKey: string;
   baseUrl: string;
 
   addresses: Array<Address>;
-  cards: Array<Card>;
+  payments: Array<Payment>;
   devices: Array<Device>;
   emails: Array<Email>;
 
@@ -82,7 +101,7 @@ class KountVip {
     // Grab info out of config
     this.apiKey = apiKey;
     this.addresses = [];
-    this.cards = [];
+    this.payments = [];
     this.devices = [];
     this.emails = [];
   }
@@ -143,21 +162,23 @@ class KountVip {
     }
   }
 
-  addCard(number: string, action: string): number {
-    const cardAction = (<any>Actions)[action];
-    if (cardAction === undefined) throw new Error("Invalid action: only 'approve', 'review', 'decline', or 'delete' allowed.");
-    let card: Card = { number, action: cardAction };
-    return this.cards.push(card);
+  addPayment(token: string, type: string, action: string): number {
+    const paymentAction = (<any>Actions)[action];
+    const paymentType = (<any>PaymetTypes)[type];
+    if (paymentAction === undefined) throw new Error("Invalid action: only 'approve', 'review', 'decline', or 'delete' allowed.");
+    if (paymentType === undefined) throw new Error("Invalid payment type.")
+    let payment: Payment = { token, type, action: paymentAction };
+    return this.payments.push(payment);
   }
 
-  async submitCards(): Promise<any> {
-    if (this.cards.length <= 0) return false;
+  async submitPaymentss(): Promise<any> {
+    if (this.payments.length <= 0) return false;
 
     let data: {[k: string]:any} = {};
-    this.cards.forEach(c => data[`ptok[${c.number}]`] = c.action);
+    this.payments.forEach(p => data[`${p.action.toLowerCase}_payment[${p.type}][]`] = p.token);
     try {
-      let results = await this._request('post', 'card', qs.stringify(data));
-      this.cards = [];
+      let results = await this._request('post', 'payment', qs.stringify(data));
+      this.payments = [];
       return results;
     } catch (e) {
       if (e.response.status === 401) throw new Error('API Key is unauthorized');
