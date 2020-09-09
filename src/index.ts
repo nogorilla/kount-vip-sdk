@@ -19,7 +19,7 @@ interface Axios {
 
 interface Address {
   line1: string,
-  line2?: string,
+  line2: string,
   city: string,
   state: string,
   zipCode: string,
@@ -114,15 +114,16 @@ class KountVip {
   async submitAddresses(): Promise<any> {
     if (this.addresses.length <= 0) return false;
 
-    let data: {[k: string]:any} = {};
+    let data: string = '';
     this.addresses.forEach(address => {
-      let addressLine = address.line2 !== undefined ? `${address.line1}|${address.line2}` : address.line1;
+      let addressLine = address.line2 !== undefined ? `${address.line1}\n${address.line2}` : address.line1;
       const country = address.country || 'US'
-      data[`${address.type}`] = `${addressLine}|${address.city}|${address.state}|${address.zipCode}|${country}`
+      const formated = encodeURIComponent(`${addressLine}\n${address.city}\n${address.state}\n${address.zipCode}\n${country}`);
+      data += `${address.type}=${formated}`;
     });
 
     try {
-      let results = await this._request('post', 'address', qs.stringify(data));
+      let results = await this._request('post', 'address', data);
       this.addresses = [];
       return results;
     } catch (e) {
