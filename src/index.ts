@@ -87,53 +87,12 @@ class KountVip {
     this.emails = [];
   }
 
-  async getShippingAddress(address: Address) {
-    return await this._getAddress(address, AddressTypes.get_shipping);
-  }
-
-  async getBillingAddress(address: Address) {
-    return await this._getAddress(address, AddressTypes.get_billing);
-  }
-
-  async _getAddress(address: Address, type: string) {
-    const addressLine = address.line2 !== undefined ? `${address.line1}|${address.line2}` : address.line1;
-    const country = address.country || 'US'
-    const body = `${type}=${addressLine}|${address.city}|${address.state}|${address.zipCode}|${country}`
-
-    return await this._request('get', 'address', body);
-  }
-
-  async reviewBillingAddress(address: Address) {
-
-  }
-
-  async reviewShippingAddress(address: Address) {
-
-  }
-
-  async declineBillingAddress(address: Address) {
-
-  }
-
-  async declineShippingAddress(address: Address) {
-
-  }
-
-  async deleteBillingAddress(address: Address) {
-
-  }
-
-  async deleteShippingAddress(address: Address) {
-
-  }
-
-
   addAddress(address: Address, type: string, action: string): number {
     address.type = (<any>AddressTypes)[`${action}_${type}`];
     return this.addresses.push(address);
   }
 
-  async submitAddresses() {
+  async submitAddresses(): Promise<any> {
     if (this.addresses.length <= 0) return false;
 
     let data: {[k: string]:any} = {};
@@ -168,7 +127,7 @@ class KountVip {
   /**
    * Submit emails for bulk actions.
    */
-  async submitEmails() {
+  async submitEmails(): Promise<any> {
     if (this.emails.length <= 0) return false;
 
     let data: {[k: string]:any} = {};
@@ -191,7 +150,7 @@ class KountVip {
     return this.cards.push(card);
   }
 
-  async submitCards() {
+  async submitCards(): Promise<any> {
     if (this.cards.length <= 0) return false;
 
     let data: {[k: string]:any} = {};
@@ -207,15 +166,14 @@ class KountVip {
     }
   }
 
-
-  adddevice(id: string, action: string): number {
+  addDevice(id: string, action: string): number {
     const deviceAction = (<any>Actions)[action];
     if (deviceAction === undefined) throw new Error("Invalid action: only 'approve', 'review', 'decline', or 'delete' allowed.");
     let device: Device = { id, action: deviceAction };
     return this.devices.push(device);
   }
 
-  async submitDevices() {
+  async submitDevices(): Promise<any> {
     if (this.devices.length <= 0) return false;
 
     let data: {[k: string]:any} = {};
@@ -230,8 +188,6 @@ class KountVip {
       throw e;
     }
   }
-
-
 
   /**
    * Send request to Kount api
