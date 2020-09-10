@@ -80,7 +80,7 @@ class KountVip {
   emails: Array<Email>;
 
   /**
-   * @param {string} apiKey
+   * @param apiKey
    * @constructor
    */
   constructor(apiKey: string, test: boolean = false) {
@@ -95,6 +95,14 @@ class KountVip {
     this.emails = [];
   }
 
+  /**
+   * Add an address for bulk submittal
+   * @param address - address object to submit
+   * @param type - address type: billing or shipping
+   * @param action - action to perfrom on device: approve, review, decline, or delete
+   *
+   * @retuns length of payment array
+   */
   addAddress(address: Address, type: string, action: string): number {
     address.type = (<any>AddressTypes)[`${action}_${type}`];
     return this.addresses.push(address);
@@ -123,8 +131,8 @@ class KountVip {
 
   /**
    * Add an email address for bulk editing
-   * @param {string} email - Email address to execute against
-   * @param {string} action - Action to approve, review, decline, or delete.
+   * @param email - Email address to execute against
+   * @param action - Action to approve, review, decline, or delete.
    */
   addEmail(address: string, action: string): number {
     const emailAction = (<any>Actions)[action];
@@ -152,6 +160,14 @@ class KountVip {
     }
   }
 
+  /**
+   * Add a payment for bulk submittal
+   * @param token - payment token to submit
+   * @param type - payment type
+   * @param action - action to perfrom on device: approve, review, decline, or delete
+   *
+   * @retuns length of payment array
+   */
   addPayment(token: string, type: string, action: string): number {
     const paymentAction = (<any>Actions)[action];
     const paymentType = (<any>PaymentTypes)[type];
@@ -177,6 +193,13 @@ class KountVip {
     }
   }
 
+  /**
+   * Add a device for bulk submittal
+   * @param id - Device ID to add
+   * @param action - action to perfrom on device: approve, review, decline, or delete
+   *
+   * @retuns length of device array
+   */
   addDevice(id: string, action: string): number {
     if (id.length !== 32) throw new Error('Invalid Device ID.');
     const deviceAction = (<any>Actions)[action];
@@ -185,6 +208,11 @@ class KountVip {
     return this.devices.push(device);
   }
 
+  /**
+   * Sumbits Devices
+   *
+   * @returns The result from the API endpoint
+   */
   async submitDevices(): Promise<any> {
     if (this.devices.length <= 0) return false;
 
@@ -203,10 +231,10 @@ class KountVip {
 
   /**
    * Send request to Kount api
-   * @param {String} method
-   * @param {String} path
-   * @param {string} [body]
-   * @returns {Promise}
+   * @param method - HTTP method to use
+   * @param path - API URL path to call
+   * @param body - database to send on POST or PATCH
+   * @returns Promise
    */
   private async request(method: string, path: string, body: any) {
     // Build url
