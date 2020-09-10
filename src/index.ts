@@ -1,74 +1,9 @@
-const axios = require('axios');
-const qs = require('querystring');
+// const axios = require('axios'); // TODO - change to es6 axios
+import axios, { AxiosRequestConfig } from 'axios';
+import querystring from 'querystring';
 
-interface Axios {
-  method: string;
-  url: string;
-  headers: object;
-  data?: string;
-}
-
-interface Address {
-  line1: string;
-  line2: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  country?: string;
-  type?: string;
-}
-
-interface Device {
-  id: string;
-  action: string;
-}
-
-interface Email {
-  address: string;
-  action?: string;
-}
-
-interface Payment {
-  token: string;
-  action: string;
-  type: string;
-}
-
-enum Actions {
-  approve = 'A',
-  decline = 'D',
-  delete  = 'X',
-  review  = 'R',
-}
-
-enum AddressTypes {
-  get_billing      = 'ba',
-  get_shipping     = 'sa',
-  decline_billing  = 'd_ba[]',
-  decline_shipping = 'd_sa[]',
-  delete_billing   = 'x_ba[]',
-  delete_shipping  = 'x_sa[]',
-  review_billing   = 'r_ba[]',
-  review_shipping  = 'r_sa[]',
-}
-
-enum PaymentTypes {
-  apple_pay                 = 'APAY',
-  bpay                      = 'BPAY',
-  carte_bleue               = 'CARTE_BLEUE',
-  check                     = 'CHEK',
-  elv                       = 'ELV',
-  giropay                   = 'GIROPAY',
-  interac                   = 'INTERAC',
-  mercado_pago              = 'MERCADO_PAGO',
-  neteller                  = 'NETELLER',
-  poli                      = 'POLI',
-  paypal                    = 'PYPL',
-  single_euro_payments_area = 'SEPA',
-  skrill_moneybookers       = 'SKRILL',
-  sofort                    = 'SOFORT',
-  token                     = 'TOKEN',
-}
+import { Address, Device, Email, Payment } from './interfaces';
+import { Actions, AddressTypes, PaymentTypes } from './enums';
 
 class KountVip {
   apiKey: string;
@@ -150,7 +85,7 @@ class KountVip {
     const data: {[k: string]:any} = {};
     this.emails.forEach(e => data[`email[${e.address}]`] = e.action);
     try {
-      const results = await this.request('post', 'email', qs.stringify(data));
+      const results = await this.request('post', 'email', querystring.stringify(data));
       this.emails = [];
       return results;
     } catch (e) {
@@ -183,7 +118,7 @@ class KountVip {
     const data: {[k: string]:any} = {};
     this.payments.forEach(p => data[`${p.action.toLowerCase()}_payment[${p.type}][]`] = p.token);
     try {
-      const results = await this.request('post', 'payment', qs.stringify(data));
+      const results = await this.request('post', 'payment', querystring.stringify(data));
       this.payments = [];
       return results;
     } catch (e) {
@@ -219,7 +154,7 @@ class KountVip {
     const data: {[k: string]:any} = {};
     this.devices.forEach(d => data[`device_id[${d.id}]`] = d.action);
     try {
-      const results = await this.request('post', 'device', qs.stringify(data));
+      const results = await this.request('post', 'device', querystring.stringify(data));
       this.devices = [];
       return results;
     } catch (e) {
@@ -243,8 +178,7 @@ class KountVip {
     if (method === 'get') url += `?${body}`;
 
     // Build default axios config
-    const config: Axios = {
-      method,
+    const config: AxiosRequestConfig = {
       url,
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -253,6 +187,8 @@ class KountVip {
     };
 
     if ((method === 'post' || method === 'put') && body) config.data = body;
+
+    config.method = (method === 'post') ? 'post' : 'get';
 
     // Deliver request promise
     return (await axios(config)).data;
