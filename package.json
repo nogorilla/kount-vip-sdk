@@ -1,6 +1,6 @@
 {
   "name": "kount-vip-sdk",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "SDK for working with Kount VIP API",
   "main": "dist/index.js",
   "scripts": {
